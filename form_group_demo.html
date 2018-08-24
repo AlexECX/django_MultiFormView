@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+
+
+<form method="post">
+	{% comment %}
+	  Note: 
+	{% endcomment %}
+	{% csrf_token %}
+	{{ forms.myformgroup.cartupdateform }}
+	{{ forms.myformgroup.usercartform }}
+	<input type="hidden" name="form_name" value="{{forms.myformgroup.prefix}}">
+	<input type="submit" value="Send">
+</form>
+
+<form method="post">
+	{% csrf_token %}
+	{{ forms.cartupdateform }}
+	{{ forms.usercartform }}
+	<input type="submit" value="Send">
+</form>
+
