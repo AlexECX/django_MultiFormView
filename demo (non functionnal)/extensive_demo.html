@@ -1,10 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% comment %}
-  This form is not a subclass of MultipleForm, thus we must
-  provide our own form_name input
-{% endcomment %}
+
 <form method="post">
 	{% csrf_token %}
 	{{ forms.better_name }}

@@ -5,12 +5,12 @@ from django.forms import formset_factory
 
 from .forms import ContactForm, SubscriptionForm, CartUpdateForm
 
-from .multiforms import MultiFormsView, make_formgroup
+from .multiforms import MultiFormView, make_formgroup
 
 
 MyFormset = formset_factory(ContactForm)
 
-class ExtensiveMultipleFormsDemoView(MultiFormsView):
+class ExtensiveMultipleFormsDemoView(MultiFormView):
     template_name = "app_name/extensive_demo.html"
     form_classes = [
         ContactForm,
@@ -19,7 +19,7 @@ class ExtensiveMultipleFormsDemoView(MultiFormsView):
     ]
 
     # The order is important! and you need to provide an
-    # url for every ClassName.
+    # url for every form_class.
     success_urls = [
         reverse_lazy("app_name:contact_view"),
         reverse_lazy("app_name:subcribe_view"),
@@ -29,14 +29,14 @@ class ExtensiveMultipleFormsDemoView(MultiFormsView):
     #success_url = reverse_lazy("app_name:some_view")
 
 
-    initial = {
+    initials = {
         "contactform": {"message": "some initial data"}
     }
     
     def get_contactform_initial(self, form_name):
         initial = super().get_initial(form_name)
         # Some logic here? I just wanted to show it could be done,
-        # initial data is assigned automatically from self.initial anyway
+        # initial data is assigned automatically from self.initials anyway
         return initial
 
     def get_my_formset_initial(self, form_name):
@@ -77,7 +77,7 @@ FormGroup = make_formgroup(
     ("usercartform", CartUpdateForm),
 )
 
-class FormGroupDemoView(MultiFormsView):
+class FormGroupDemoView(MultiFormView):
     """
     The make_formgroup function uses a subclassed django-betterforms
     Multiform to wrap multiple forms in a single "form behaving" class. 

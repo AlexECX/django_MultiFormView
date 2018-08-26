@@ -1,6 +1,15 @@
 
 Here are some info and usage guidelines:
 
+Class name retrival:
+
+  - The python 3.3+ __qualname__ attribut is used to retrieve a 
+    FormClass' name. For older versions it uses source code inspection,
+    and if that fails it will instanciate a copy of the FormClass and 
+    use its __name__ instead. If you use python 3.2- and don't want to 
+    use the automatic naming system, you can simply use 
+    ("name", FormClass) tuples to manually assign a name instead.
+
 For all Views:
   - A FormClass cannot be used twice unless each duplicate class is 
     given a unique name. This is done by giving a ("name", FormClass)
