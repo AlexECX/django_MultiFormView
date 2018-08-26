@@ -54,7 +54,6 @@ class ExtensiveMultipleFormsDemoView(MultiFormsView):
     
     def contactform_form_valid(self, form):
         title = form.cleaned_data.get('title')
-        form_name = form.cleaned_data.get('form_name')
         print(title)
         return super().form_valid(form) 
 
@@ -80,31 +79,28 @@ FormGroup = make_formgroup(
 
 class FormGroupDemoView(MultiFormsView):
     """
-    The make_formgroup function uses a django-betterforms.Multiform
-    to wrap multiple forms in a single "form behaving" class. It takes
-    an unlimited number of FormClass and/or {"custom_name": FormClass} 
-    arguments and returns a FormGroup class. Nothing special really, you
-    can make your own function using a django-betterforms.Multiform.
-
-    Just like FormSets, don't forget to provide a "form_name" input in
-    the template if you want to use <formgroup_name>_form_valid().
+    The make_formgroup function uses a subclassed django-betterforms
+    Multiform to wrap multiple forms in a single "form behaving" class. 
+    It takes an unlimited number of FormClass and/or ("name", FormClass)
+    tuples arguments and returns a FormGroup class. Nothing special 
+    really, you can make your own function using a the FormGroup class.
     """
     template_name = "app_name/form_group_demo.html"
     form_classes = [
-    # don't do this:
-    #   ("some_name", MyFormGroup),
-    # The name must be the same as the one used at instanciation
-        ("myformgroup", FormGroup), # manual naming
-    #   FormGroup,                  # automatic naming
+        FormGroup, 
+        CartUpdateForm,
+        ("usercartform", CartUpdateForm), 
     ]
 
     success_urls = [
         # A FormGroup only needs 1 url
         reverse_lazy("app_name:my_formgroup_view"), 
+        reverse_lazy("app_name:my_view"),
+        reverse_lazy("app_name:my_view"),
     ]
     
     def get_myformgroup_initial(self, form_name):
-        # A FormGroup takes a { "formname": {"field_name": value} }
+        # A FormGroup takes a {"formname": {"field_name": value}}
         # dict for a per form initialisation
         initial = super().get_initial(form_name)
         if "All in one go" is "your preference":
@@ -123,76 +119,7 @@ class FormGroupDemoView(MultiFormsView):
         action2 = form["cartupdateform"].cleaned_data.get('title')
         return super().form_valid(form)
 
-
-# class NoFormNameDemoView(MultiFormsView):
-#     """
-#     If there are forms that are not using the <input name="form_name"> 
-#     method, either by MultipleForm subclassing or manually giving one in 
-#     the template, you will not be able to use a <formname>_form_valid() 
-#     for THESE forms, use form_valid() instead and make your own checks.
-#     """
-#     template_name = "app_name/no_form_name_demo.html"
-#     form_classes = [
-#         ContactForm,
-#         CartUpdateForm, # Not a MultipleForm subclass
-
-#         # A FormClass needs a different name if used more 
-#         # than once.
-#         ("usercartform", CartUpdateForm),
-#         ("cartupdateform2", CartUpdateForm),
-#         ("usercartform2", CartUpdateForm)
-#     ]
-
-#     success_url = reverse_lazy("app_name:my_view")
-    
-#     # Even if not using the form_name input, all get_<name>_methods are 
-#     # still available.
-#     def get_cartupdateform_form_kwargs(self, form_name):
-#         kwargs = super().get_form_kwargs(form_name)
-#         kwargs["selection"] = self.get_selection()
-#         return kwargs
-    
-#     def contactform_form_valid(self, form):
-#         title = form.cleaned_data.get('title')
-#         print(title)
-#         return super().form_valid(form) 
-    
-#     # I gave my own input inside the </form>, and since I know there are
-#     # 2 forms in it, I can process them.
-#     def name_i_gave_in_template_form_valid(self, form):
-#         # Or so you mignt think, but ^ this name does not
-#         # match any forms so this function will never be called, 
-#         # the forms where sent to self.form_valid(). 
-#         # If you want to process multiple different forms with 
-#         # a <form_name>_form_valid function, see make_formgroup() 
-#         # in the next DemoView.
-#         pass
-
-#     def form_valid(self, forms):
-#         # This is just an example of how you could do it.
-#         if forms["cartupdateform2"].is_bound:
-#             form = forms["cartupdateform2"]
-#             action = form.cleaned_data.get('action')
-#             print(action)
-#             return super().form_valid(form_name=form.prefix)
-#             # Note: If, for some reason, you are using a prefix 
-#             # other than the default given one, use 
-#             # form_name="cartupdateform2" instead.
-
-#         elif forms["usercartform2"].is_bound:
-#             form = forms["usercartform2"]
-#             # logic
-#             return super().form_valid(form_name=form.prefix)
-
-#         # And here are my lost forms
-#         elif forms["cartupdateform"].is_bound:
-#             # Both were in the same </form>, so if 1 is bound, 
-#             # all are bound.
-#             form1 = forms["cartupdateform"]
-#             form2 = forms["usercartform"]
-#             return super().form_valid(form_name=form1.prefix)
-
-#     def get_selection(self):
-#         #selection = Book.objects.filter(id__in=user_cart)
-#         selection = [(0, "Book0"), (1, "Book1")]
-#         return selection
+    def cartupdateform_form_valid(self, forms):
+        action1 = forms["cartupdateform"].cleaned_data.get("action")
+        action2 = forms["usercartform"].cleaned_data.get("action")
+        return super().form_valid(forms)
