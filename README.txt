@@ -12,8 +12,8 @@ For all Views:
         ("i_just_want_to_rename_it", SubscriptionForm),
     ]
 
-  - Use success_url if there is a single succes url, else provide an url
-    form every FormClass or tuple in success_urls.
+  - Use success_url if there is a single succes url, else provide a of 
+    urls to listan success_urls, one url per FormClass or tuple.
 
     success_urls = [
         reverse_lazy("app_name:contact_view"),
@@ -48,5 +48,5 @@ For MultiFormView:
   - After form(s) validation, the view iterates through the valid forms'
     name to checks if a corresponding <form name>_form_valid method 
     was defined. It picks the first one it finds, so only 1 method can
-    be defined for a group of valid forms. If no method is found, it 
-    calls form_valid (just like FormsView).
+    be defined for a group of forms. If no method is found, it calls 
+    form_valid (just like FormsView).
