@@ -5,7 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import (HttpResponseForbidden, HttpResponseRedirect, 
                          HttpResponseBadRequest)
 
-from .qualname import qualname
+from .qualname.qualname import qualname
 from .django_betterforms.multiform import MultiForm
 import sys
 
@@ -20,10 +20,6 @@ else:
 
 import inspect
 from abc import ABC, abstractmethod
-
-
-class MultipleForm(Form):
-    form_name = CharField(max_length=60, widget=HiddenInput())
 
 
 def cls_name(obj):
@@ -44,7 +40,16 @@ def cls_name(obj):
     return name.lower()
 
 
-def make_formgroup(name, *args):
+class FormGroup(MultiForm):
+    """Django_betterforms MultiForm with prefix"""
+    prefix = None
+
+    def __init__(self, data=None, files=None, *args, **kwargs):
+        self.prefix = kwargs.get("prefix")
+        super().__init__(data=data, files=files, *args, **kwargs)
+
+
+def make_formgroup(*args):
     form_classes = []
     for form_cls in args:
         if inspect.isclass(form_cls):
@@ -52,35 +57,34 @@ def make_formgroup(name, *args):
         else:
             form_classes.append(form_cls) 
 
-    FormGroup = type(
-        str(name), 
-        (MultiForm,), 
-        {
-            "form_classes": OrderedDict(form_classes), # Py 3.7+ uses dict()
-            "prefix": str(name).lower(), # This will add a prefix attribut, 
-                                         # usefull for the template
-        },
+    form_group = type(
+        "FormGroup", 
+        (FormGroup,), 
+        {"form_classes": OrderedDict(form_classes)}, # Py 3.7+ uses dict()
     )
-    return FormGroup
+    return form_group
 
 
 class AbstractFormsMixin(ABC, ContextMixin):
     """
-    Abstract base class for Forms mixins. When implemented, provides a
-    way to show and handle multiple forms. It generates prefixes from 
-    the FormClass' name or a user given ("name", FormClass) tuple and
-    use them to determine if a form received POST data.
+    Abstract base class for Forms and MultiForm mixins. 
+    When implemented, provides a way to show and handle multiple forms. 
+    It generates a prefix from the FormClass' name or a user given 
+    ("name", FormClass) tuple and uses it to determine if a form 
+    received POST data.
 
     A name cannot appear twice, so either use a FormSet or give a 
     different name to recurring classes with the tuple method if the 
     same FormClass is used more than once.
     """
     initials = {}
-    form_classes = {} 
-    success_urls = {}
+    form_classes = []
+    success_urls = []
     prefixes = {}
     
     success_url = None
+
+    _form_name = None
 
     def get_initial(self, form_name=None):
         """
@@ -90,7 +94,7 @@ class AbstractFormsMixin(ABC, ContextMixin):
 
     def get_prefix(self, form_name):
         """Return the prefix to use for forms."""
-        return self.prefixes.get(form_name, form_name)
+        return self.prefixes.get(form_name, "<%s>" % form_name)
     
     def get_form_classes(self):
         """
@@ -111,17 +115,13 @@ class AbstractFormsMixin(ABC, ContextMixin):
 
     def get_forms(self, form_classes=None):
         """
-        Generate the forms from the form_classes list as a 
-        {"form_name": form_instance} dict.
+        Generate the forms from the form_classes list and returns those
+        bound with POST data as a  ("name", form_instance) tuple.
         """
         if form_classes is None:
             form_classes = self.get_form_classes()
-        form_dict = OrderedDict() # Py 3.7+ uses dict()
-        for name, form_cls in form_classes:
-            form_dict[name] = self.get_form(name, form_cls)
-        return form_dict
-        # return {(name, self.get_form(name, form_cls)) \
-        #         for name, form_cls in form_classes}
+        return {name: self.get_form(name, form_cls) \
+                 for name, form_cls in form_classes}
 
     @abstractmethod
     def get_form_kwargs(self, form_name):
@@ -146,9 +146,15 @@ class AbstractFormsMixin(ABC, ContextMixin):
         names = [name for name, f_cls in self.get_form_classes()]
         return {k: v for k, v in zip(names, self.success_urls)} 
 
-    def form_valid(self, form, form_name):
+    def form_valid(self, forms, form_name=None):
         """If the form is valid, redirect to the supplied URL."""
+        if form_name is None:
+            form_name = self._form_name
         return HttpResponseRedirect(self.get_success_url(form_name))
+
+    def forms_valid(self, forms, form_name=None):
+        self._form_name = next(iter(forms)) # 1st name it can get
+        return self.form_valid(forms)
      
     def forms_invalid(self, forms):
         """
@@ -162,11 +168,13 @@ class AbstractFormsMixin(ABC, ContextMixin):
             kwargs['forms'] = self.get_forms()
         return super().get_context_data(**kwargs)
 
+    def get_bound_forms(self, forms):
+        return {name: form \
+                for name, form in forms.items() if form.is_bound}
+
     def forms_are_valid(self, forms):
         """Form(s) validation."""
-        validate = [form.is_valid() \
-                    for form in forms.values() if form.is_bound]
-        return validate != [] and all(validate)
+        return all([forms[name].is_valid() for name in forms])
 
 
 class FormsMixin(AbstractFormsMixin):
@@ -190,10 +198,7 @@ class FormsMixin(AbstractFormsMixin):
         if self.request.method in ('POST', 'PUT'):
             # If a forms prefix is found in the POST data, it will
             # be filled and bounded.
-            if next(
-                (k for k in self.request.POST if kwargs['prefix'] in k),
-                False
-                ):
+            if kwargs['prefix'] in "+".join(self.request.POST): 
                 kwargs.update({
                         'data': self.request.POST,
                         'files': self.request.FILES,
@@ -201,8 +206,8 @@ class FormsMixin(AbstractFormsMixin):
         return kwargs
 
 
-class ExtraFormsMixin(AbstractFormsMixin):
-    """FormsMixin with get_<form_name> methods overload support"""
+class MultiFormMixin(AbstractFormsMixin):
+    """FormsMixin with <form_name> methods overload support"""
 
     def get_initials(self, form_name):
         """Makes get_%_initial overload possible."""
@@ -229,6 +234,24 @@ class ExtraFormsMixin(AbstractFormsMixin):
         else:
             return self.get_form_kwargs(form_name)
 
+    def forms_valid(self, forms, form_name=None):
+        """
+        Makes %_form_valid overload possible. 
+        Iterates through the valid forms to see if one of there name is
+        in a %_form_valid method. It picks the first one it finds
+        (Tip: don't use more than one %_form_valid method for a </form>)
+        """
+        for name in forms:
+            if hasattr(self, name+'_form_valid'):
+                self._form_name = name
+                if len(forms) == 1:
+                    return getattr(self, name+'_form_valid')(forms[name])
+                else:
+                    return getattr(self, name+'_form_valid')(forms)
+        
+        self._form_name = next(iter(forms)) # 1st name it can get
+        return self.form_valid(forms)
+
     def get_form(self, form_name, form_class=None):
         """Return an instance of a form."""
         if form_class is None:
@@ -247,65 +270,12 @@ class ExtraFormsMixin(AbstractFormsMixin):
         if self.request.method in ('POST', 'PUT'):
             # If a forms prefix is found in the POST data, it will
             # be filled and bounded.
-            if next(
-                (k for k in self.request.POST if kwargs['prefix'] in k),
-                False
-                ):
+            if kwargs['prefix'] in "+".join(self.request.POST): 
                 kwargs.update({
                         'data': self.request.POST,
                         'files': self.request.FILES,
                     })
         return kwargs
-
-
-class BaseMultiFormMixin:
-    """
-    Adds automatic <input name="form_name"> processing as well as
-    <form_name> form_valid overload support.
-    """
-    _form_name = None
-
-    def get_initial(self, form_name=None):
-        initial = super().get_initial(form_name)
-        if form_name:
-            initial.update({'form_name': form_name})
-        return initial
-    
-    def form_valid(self, form, form_name=None):
-        """If the form is valid, redirect to the supplied URL."""
-        if form_name is None:
-            form_name = self.get_form_name()
-        return super().form_valid(form, form_name)
-
-    def forms_valid(self, forms, form_name=None):
-        """
-        Makes %_form_valid overload possible. If using form_groups,
-        overload using form_valid instead.
-        """
-        if form_name is None:
-            form_name = self.get_form_name()
-        if not form_name:
-            return self.form_valid(forms)
-        else:
-            form_valid_method = '%s_form_valid' % form_name
-            if hasattr(self, form_valid_method):
-                return getattr(self, form_valid_method)(forms[form_name])
-            else:
-                return self.form_valid(forms[form_name], form_name)
-
-    def get_form_name(self):
-        """
-        Searches for a POST key with 'form_name' 
-        """
-        if self._form_name is None:
-            self._form_name = self.request.POST.get("form_name")
-        if self._form_name is None:
-            self._form_name = next(
-                (self.request.POST[k] for k in self.request.POST 
-                 if "form_name" in k),
-                ""
-                )
-        return self._form_name
 
 
 class ProcessMultiFormView(ProcessFormView):
@@ -317,58 +287,36 @@ class ProcessMultiFormView(ProcessFormView):
         validation. All other forms are instanciated blank.
         """
         forms = self.get_forms()
-        if self.forms_are_valid(forms):
-            return self.forms_valid(forms)
+        bound_forms = self.get_bound_forms(forms)
+        if not bound_forms: # Empty POST request
+            return HttpResponseForbidden()
+        if self.forms_are_valid(bound_forms):
+            return self.forms_valid(bound_forms)
         else:
             return self.forms_invalid(forms)
- 
 
-class SimpleMultiFormMixin(BaseMultiFormMixin, FormsMixin):
-    """"""
 
-class BaseSimpleMultiFormView(SimpleMultiFormMixin, ProcessMultiFormView):
+class BaseFormsView(FormsMixin, ProcessMultiFormView):
     """A base view for displaying several forms."""
 
-class SimpleMultiFormView(TemplateResponseMixin, BaseSimpleMultiFormView):
-    """
-    A stripped down MultiForm view without get_<form_name> method
-    overload support.
-    """
+class FormsView(TemplateResponseMixin, BaseFormsView):
+    """    
+    A view for displaying forms, and rendering a template response.
+    Barebone version with no available <form_name> method overload 
 
-class MultiFormMixin(BaseMultiFormMixin, ExtraFormsMixin):
-    """"""
+    It generates a prefix from the FormClass' name or a user given tuple
+    in the format ("name", FormClass). The prefixes are used to 
+    determine if a form received POST data.
+
+    A name cannot appear twice, use a FormSet or give a different name 
+    with the tuple method if using duplicate classes.
+    """
 
 class BaseMultiFormView(MultiFormMixin, ProcessMultiFormView):
     """A base view for displaying several forms."""
 
 class MultiFormView(TemplateResponseMixin, BaseMultiFormView):
     """
-    A view for displaying forms, and rendering a template response.
-
-    Full <form_name> method overload suport for form_valid and 
+    FormsView with <form_name> method overload suport for form_valid and
     get_methods initial, prefix and form_kwargs.
-
-    Has automatic "form_name" input initialisation and POST processing.
-    If the input is not found in POST, defaults to FormsView behavior.
     """
-
-class BaseFormsView(ProcessMultiFormView):
-    """A base view for displaying several forms."""
-
-class FormsView(TemplateResponseMixin, BaseFormsView, FormsMixin):
-    """    
-    Barebone version with no available <form_name> method overload or 
-    automatic <input name="form_name"> processing.
-
-    It generates prefixes from the FormClass' name or a user given tuple
-    in the format ("name", FormClass) and use them to determine if a 
-    form received POST data.
-
-    A name cannot appear twice, use a FormSet or give a different name 
-    with the tuple method if using duplicate classes.
-    """
-
-class PlusFormsView(TemplateResponseMixin, BaseFormsView, ExtraFormsMixin):
-    """FormView with get_<form_name> method overload support."""
-
-

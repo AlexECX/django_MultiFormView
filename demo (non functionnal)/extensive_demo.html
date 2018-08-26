@@ -8,7 +8,6 @@
 <form method="post">
 	{% csrf_token %}
 	{{ forms.better_name }}
-	<input type="hidden" name="{{forms.better_name.prefix}}">
 	<input type="submit" value="Subscribe">
 </form>
 
@@ -19,18 +18,10 @@
 </form>
 
 <form method="post">
-	{% comment %}
-	  Provide your own form_name input if using a formset
-	{% endcomment %}
 	{% csrf_token %}
 	{% for form in forms.my_formset %}
 		{{ form }}
 	{% endfor %}
-	<input type="hidden" name="form_name" value="{{forms.my_formset.prefix}}">
-	{% comment %}
-		Note: If using a prefix other than the default given one:
-	<input type="hidden" name="form_name" value="my_formset">
-	{% endcomment %}
 	<input type="submit" value="Send">
 </form>
 {% endblock content %}
