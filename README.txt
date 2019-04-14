@@ -21,8 +21,12 @@ For all Views:
         ("i_just_want_to_rename_it", SubscriptionForm),
     ]
 
-  - Use success_url if there is a single succes url, else provide a of 
-    urls to listan success_urls, one url per FormClass or tuple.
+  - Use success_url if there is a single succes url, else use success_urls 
+    with a list of success urls, one url per FormClass or tuple.
+    
+    success_url = reverse_lazy("app_name:my_view")
+
+    === OR ===
 
     success_urls = [
         reverse_lazy("app_name:contact_view"),
@@ -30,13 +34,9 @@ For all Views:
         reverse_lazy("app_name:my_view")
     ]
 
-    === OR ===
-
-    success_url = reverse_lazy("app_name:my_view")
-
   - A prefix is automatically assigned to every form based on its class
-    name or user defined name, using the format <name>. On POST, a form
-    will be assigned POST data if its prefix is found in the POST keys.
+    name or user defined name. On POST, a form will be assigned POST 
+    data if its prefix is found in the POST keys.
     Without this check, every forms would receive POST data, be bound, 
     and thus go through form validation, weither or not they where part 
     of the same </form> tag.
@@ -51,7 +51,7 @@ For FormsView:
 
 
 For MultiFormView:
-  - You can overload get_methods initial, prefix and form_kwargs on a 
+  - You can overload the get_methods initial, prefix and form_kwargs on a 
     per form basis by defining a get_<form's name>_<method name> for it.
 
   - After form(s) validation, the view iterates through the valid forms'
