@@ -1,6 +1,6 @@
 # FormsView and MultiFormView for Django
 
-Create views that can manage more than 1 form, possibly in more than 1 </form> tag.
+Create views that can manage more than 1 form, possibly in more than 1 \</form\> tag.
 
 ## Getting Started
 
@@ -14,6 +14,13 @@ The python 3.3+ __qualname__ attribut is used to retrieve a FormClass' name. For
 uses source code inspection, and if that fails it will instanciate a copy of the FormClass and use 
 its __name__ instead. If you use python 3.2- and don't want to use the automatic naming system, you 
 can simply use a ("name", FormClass) tuples instead of a FormClass to manually assign a name instead.
+
+### Use of prefixes
+
+A prefix is automatically assigned to every form based on its class' lower case name or user defined name. 
+On POST, a form will be assigned POST data if its prefix is found in the POST keys. Without this check, 
+every forms would receive POST data, be bound, and thus go through form validation, weither or not they 
+where part of the same \</form\> tag of the submitted form.
 
 ### Name mangling
 
@@ -44,22 +51,13 @@ success_urls = [
 ]
 ```
 
-### Use of prefixes
-
-A prefix is automatically assigned to every form based on its class lower case name or user defined name. 
-On POST, a form will be assigned POST data if its prefix is found in the POST keys. Without this check, 
-every forms would receive POST data, be bound, and thus go through form validation, weither or not they 
-where part of the same </form> tag of the submitted form.
-
 ## Availlable Classes
 
 ### FormsView
 
-- Barebone version, with no <form_name>_method overload support.
-
-- After a succesfull validation the bound forms are sent to form_valid
-  as a dictionnary, where you will have to check which form or forms
-  where received.
+Barebone version, with no \<form_name\>_method overload support. After a succesfull validation the 
+bound forms are sent to form_valid as a dictionnary, where you will have to check which form or forms
+where received.
   
 ```
 def form_valid(self, form):
@@ -73,8 +71,8 @@ def form_valid(self, form):
 
 ### MultiFormView
 
-You can overload the get_methods initial, prefix and form_kwargs on a per form basis by defining a 
-get_<form's name>_<method name> for it.
+You can overload the getter methods initial, prefix and form_kwargs on a per form basis by defining a   
+get_\<form's name\>_\<method name\> for it.
   
 ```
 class Example(MultiFormView):
@@ -93,7 +91,7 @@ class Example(MultiFormView):
 ```
 
 After form(s) validation, the view uses the valid form's name to checks if a corresponding 
-<form name>_form_valid method was defined and call it. 
+\<form name>_form_valid method was defined and call it. 
   
 ```
 def contactform_form_valid(self, form):
@@ -102,7 +100,7 @@ def contactform_form_valid(self, form):
     return super().form_valid(form) 
 ```
   
-If there are more than 1 valid form (when multiple Form are used in a single </form>), it iterates 
+If there are more than 1 valid form (when multiple Form are used in a single \</form>), it iterates 
 through the form names and picks the first matching method it finds. A form dict containing all valid
 forms will be passed as argument, instead of a single form. 
 
@@ -122,7 +120,7 @@ No automated tests yet, maybe one day.
 
 ## Authors
 
-* **Alexandre Cox** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+* **Alexandre Cox** 
 
 ## License
 
