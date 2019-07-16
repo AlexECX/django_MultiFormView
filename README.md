@@ -104,7 +104,7 @@ If there are more than 1 valid form (when multiple `Form` are used in a single \
 through the form names and picks the first matching method it finds. A form dict containing all valid
 forms will be passed as argument, instead of a single form. 
 
-If no method is found, it calls `form_valid` just like `FormsView`.
+If no method is found, it calls `form_valid` just like in `FormsView`.
 
 ## Installation
 
