@@ -124,6 +124,6 @@ No automated tests yet, maybe one day.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the BSD 3-clause License - see the [LICENSE.md](LICENSE.md) file for details
 
 ## Acknowledgments
