@@ -10,10 +10,10 @@ Clone or download the repo and add multiforms.py, qualname and django_betterform
 
 ### Class name retrieval
 
-The python 3.3+ __qualname__ attribut is used to retrieve a FormClass' name. For older versions it 
-uses source code inspection, and if that fails it will instanciate a copy of the FormClass and use 
-its __name__ instead. If you use python 3.2- and don't want to use the automatic naming system, you 
-can simply use a ("name", FormClass) tuples instead of a FormClass to manually assign a name instead.
+The python 3.3+ `__qualname__` attribut is used to retrieve a `FormClass`' name. For older versions it 
+uses source code inspection, and if that fails it will instanciate a copy of the `FormClass` and use 
+its `__name__` instead. If you use python 3.2- and don't want to use the automatic naming system, you 
+can simply use a `("name", FormClass)` tuples instead of a `FormClass` to manually assign a name instead.
 
 ### Use of prefixes
 
@@ -24,9 +24,9 @@ where part of the same \</form\> tag of the submitted form.
 
 ### Name mangling
 
-A FormClass cannot be used twice unless each duplicate class is given a unique name. This is done by 
-giving a ("name", FormClass) tuple instead of a FormClass. Note that if you are using multiple 
-duplicates of the same FormClass, a django Formset might be more appropriate.
+A `FormClass` cannot be used twice unless each duplicate class is given a unique name. This is done by 
+giving a `("name", FormClass)` tuple instead of a `FormClass`. Note that if you are using multiple 
+duplicates of the same `FormClass`, a django `Formset` might be more appropriate.
 
 ```
 form_classes = [
@@ -38,11 +38,11 @@ form_classes = [
 
 ### Url redirection
 
-Use success_url if there is a single succes url, 
+Use `success_url` if there is a single succes url, 
 ```
 success_url = reverse_lazy("app_name:my_view")
 ```
-or success_urls with a list of urls, one per FormClass or tuple.
+or `success_urls` with a list of urls, one per `FormClass` or tuple.
 ```
 success_urls = [
     reverse_lazy("app_name:contact_view"),
@@ -55,8 +55,8 @@ success_urls = [
 
 ### FormsView
 
-Barebone version, with no \<form_name\>_method overload support. After a succesfull validation the 
-bound forms are sent to form_valid as a dictionnary, where you will have to check which form or forms
+Barebone version, with no `<form_name>_method` overload support. After a succesfull validation the 
+bound forms are sent to `form_valid` as a dictionnary, where you will have to check which form or forms
 where received.
   
 ```
@@ -71,8 +71,8 @@ def form_valid(self, form):
 
 ### MultiFormView
 
-You can overload the getter methods initial, prefix and form_kwargs on a per form basis by defining a   
-get_\<form's name\>_\<method name\> for it.
+You can overload the getters `get_initial`, `get_prefix` and `get_form_kwargs` on a per form basis by defining a   
+`get_<form's name>_<method name>` for it.
   
 ```
 class Example(MultiFormView):
@@ -91,7 +91,7 @@ class Example(MultiFormView):
 ```
 
 After form(s) validation, the view uses the valid form's name to checks if a corresponding 
-\<form name>_form_valid method was defined and call it. 
+`<form name>_form_valid` method was defined and call it. 
   
 ```
 def contactform_form_valid(self, form):
@@ -100,11 +100,11 @@ def contactform_form_valid(self, form):
     return super().form_valid(form) 
 ```
   
-If there are more than 1 valid form (when multiple Form are used in a single \</form>), it iterates 
+If there are more than 1 valid form (when multiple `Form` are used in a single \</form>), it iterates 
 through the form names and picks the first matching method it finds. A form dict containing all valid
 forms will be passed as argument, instead of a single form. 
 
-If no method is found, it calls form_valid just like FormsView.
+If no method is found, it calls `form_valid` just like `FormsView`.
 
 ## Installation
 
