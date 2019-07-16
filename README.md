@@ -106,6 +106,16 @@ forms will be passed as argument, instead of a single form.
 
 If no method is found, it calls `form_valid` just like in `FormsView`.
 
+## ModelForm
+
+You can use a `ModelForm` instead of a `Form` as long as you add an `instance` keyword argument with a model instance.
+```
+def get_contactform_form_kwargs(self, form_name):
+    kwargs = super().get_form_kwargs(form_name)
+    kwargs['instance'] = Contact.objects.get(name="Batman")
+    return kwargs
+```
+
 ## Installation
 
 Not yet packaged.
